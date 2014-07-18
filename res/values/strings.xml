@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">IOIORobot</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="Connect">Connect</string>
+    <string name="Enterport">Enter port</string>
+    <string name="EntertargetIP">Enter target IP</string>
+    <string name="EXIT">EXIT</string>
+    <string name="MENU">MENU</string>
+    <string name="TEMP">TEMP</string>
+    <string name="title_activity_client__check_network">Client_CheckNetwork</string>
+
+</resources>
