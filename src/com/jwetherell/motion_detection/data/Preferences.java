@@ -17,7 +17,7 @@ public abstract class Preferences {
     public static boolean USE_STATE = false;
 
     // Which photos to save
-    public static boolean SAVE_PREVIOUS = false;
+    public static boolean SAVE_PREVIOUS = true;//false
     public static boolean SAVE_ORIGINAL = true;
     public static boolean SAVE_CHANGES = true;
 

@@ -150,11 +150,12 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 	static boolean inPreview = false;
 	static long mReferenceTime = 0;
 	static IMotionDetection detector = null;
-	static Handler handCam;
+	//static Handler handCam;
 	static volatile AtomicBoolean processing = new AtomicBoolean(false);
 
 	static boolean statsMove;
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -271,7 +272,7 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 			}
 		});
 
-	clear.setOnClickListener(new OnClickListener() {
+		clear.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View arg0) {
@@ -599,50 +600,51 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 	}
 
 	public void onPreviewFrame(final byte[] arg0, Camera arg1) {
-
-	Camera.Size MotionDetectSize = arg1.getParameters().getPreviewSize();
-		if (statsMove) {
-			if (!GlobalData.isPhoneInMotion()) {
-				DetectionThread thread = new DetectionThread(arg0,
-						MotionDetectSize.width, MotionDetectSize.height);
-				thread.start();
-			}
-		}
-		if (arg0 != null) {
-
+		runOnUiThread(new Runnable() {
 			Bitmap bitmap;
-			int w = arg1.getParameters().getPreviewSize().width;
-			int h = arg1.getParameters().getPreviewSize().height;
+			int w = mCamera.getParameters().getPreviewSize().width;
+			int h = mCamera.getParameters().getPreviewSize().height;
 			int[] rgbs = new int[w * h];
-			
-			if ((socket != null) && (socket_for_command != null)) {
-
-				if (arg0 != null && connect_state) {
-
-					decodeYUV420(rgbs, arg0, w, h);
-					bitmap = Bitmap.createBitmap(rgbs, w, h, Config.ARGB_8888);
-
-					bosCam = new ByteArrayOutputStream();
-					bitmap.compress(CompressFormat.JPEG, 50, bosCam);// quality
-					byte[] data = bosCam.toByteArray();
-					@SuppressWarnings("unused")
-					int asd=data.length;
-					try {
-						dosCam.writeInt(data.length);
-						dosCam.write(data);
-						//dosCam.flush();
-					} catch (IOException e) {
-						connect_state = false;
-						// check_on_off = false;
+			Camera.Size MotionDetectSize = mCamera.getParameters().getPreviewSize();
+			public void run() {
+				if (statsMove) {
+					if (!GlobalData.isPhoneInMotion()) {
+						DetectionThread thread = new DetectionThread(arg0,
+								MotionDetectSize.width, MotionDetectSize.height);
+						thread.start();
 					}
-					// ReadysendTemp = true;
 				}
+				if (arg0 != null) {
+					if ((socket != null) && (socket_for_command != null)) {
 
+						if (arg0 != null && connect_state) {
+
+							decodeYUV420(rgbs, arg0, w, h);
+							bitmap = Bitmap.createBitmap(rgbs, w, h,
+									Config.ARGB_8888);
+
+							bosCam = new ByteArrayOutputStream();
+							bitmap.compress(CompressFormat.JPEG, 50, bosCam);// quality
+							byte[] data = bosCam.toByteArray();
+							@SuppressWarnings("unused")
+							int asd = data.length;
+							try {
+								dosCam.writeInt(data.length);
+								dosCam.write(data);
+								// dosCam.flush();
+							} catch (IOException e) {
+								connect_state = false;
+								// check_on_off = false;
+							}
+							// ReadysendTemp = true;
+						}
+
+					}
+
+				}
 			}
-
-		}
-		// });
-		// }
+		});
+	
 	}
 
 	public void decodeYUV420(int[] rgb, byte[] yuv420, int width, int height) {
@@ -855,6 +857,19 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 						} else if (read.equals("auto_off")) {
 							_Autocon = false;
 						}
+						//
+						else if (read.equals("67")) {
+							ioio_command = 88;
+						}
+						else if (read.equals("76")) {
+							ioio_command = 0;
+						}
+						else if (read.equals("78")) {
+							ioio_command = 99;
+						}
+						else if (read.equals("87")) {
+							ioio_command = 0;
+						}
 
 					} else {
 						// dis command
@@ -981,7 +996,16 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 					Mright.setPulseWidth(2000);
 					Mleft.setPulseWidth(2000);
 					break;
-
+				case 88:// tr
+					Mright.setPulseWidth(0);
+					Mleft.setPulseWidth(1000);
+					Thread.sleep(4000);
+					break;
+				case 99:// tr
+					Mright.setPulseWidth(2000);
+					Mleft.setPulseWidth(0);
+					Thread.sleep(4000);
+					break;
 				case 0:
 					Mleft.setPulseWidth(0);
 					Mright.setPulseWidth(0);
@@ -1142,9 +1166,11 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 		}
 
 		public String sum(float a) {
+			float sum = ((cal * 1000)) / 20;
 			float sum1 = ((cal * 1000) - 2) / 20;
 			float sum2 = ((cal * 1000) + 2) / 20;
-			_tempval = String.format("Temperature : +%.2f,-%.2f", sum2, sum1);
+			//_tempval = String.format("Temperature : %.2f,%.2f", sum2, sum1);
+			_tempval = String.format("Temperature : %.2f", sum);
 			return (String) _tempval;
 		}
 
@@ -1348,71 +1374,40 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 					pre = detector.getPrevious();
 
 				// Current frame (with changes)
-				// long bConversion = System.currentTimeMillis();
+				
 				int[] img = null;
-				if (Preferences.USE_RGB) {
-					img = ImageProcessing.decodeYUV420SPtoRGB(data, width,
-							height);
-				} else {
-					img = ImageProcessing.decodeYUV420SPtoLuma(data, width,
-							height);
-				}
-				// long aConversion = System.currentTimeMillis();
-				// Log.d(TAG, "Converstion="+(aConversion-bConversion));
-
+				img = ImageProcessing.decodeYUV420SPtoRGB(data, width, height);
+		
 				// Current frame (without changes)
 				int[] org = null;
-				if (Preferences.SAVE_ORIGINAL && img != null)
+				if (Preferences.SAVE_ORIGINAL && img != null) {
 					org = img.clone();
+				}
 
 				if (img != null && detector.detect(img, width, height)) {
-					// The delay is necessary to avoid taking a picture while in
-					// the
-					// middle of taking another. This problem can causes some
-					// phones
-					// to reboot.
 					long now = System.currentTimeMillis();
 					if (now > (mReferenceTime + Preferences.PICTURE_DELAY)) {
 						mReferenceTime = now;
 
-						Bitmap previous = null;
+					/*	Bitmap previous = null;
 						if (Preferences.SAVE_PREVIOUS && pre != null) {
-							if (Preferences.USE_RGB) {
-								previous = ImageProcessing.rgbToBitmap(pre,
-										width, height);
-							} else {
-								previous = ImageProcessing.lumaToGreyscale(pre,
-										width, height);
-							}
-						}
+							previous = ImageProcessing.rgbToBitmap(pre, width,
+									height);
+						}*/
 
 						Bitmap original = null;
 						if (Preferences.SAVE_ORIGINAL && org != null) {
-							if (Preferences.USE_RGB) {
-								original = ImageProcessing.rgbToBitmap(org,
-										width, height);
-							} else {
-								original = ImageProcessing.lumaToGreyscale(org,
-										width, height);
-							}
+							original = ImageProcessing.rgbToBitmap(org, width,
+									height);
 						}
 						Bitmap bitmap = null;
 						if (Preferences.SAVE_CHANGES) {
-							if (Preferences.USE_RGB) {
-								bitmap = ImageProcessing.rgbToBitmap(img,
-										width, height);
-
-							} else {
-								bitmap = ImageProcessing.lumaToGreyscale(img,
-										width, height);
-
-							}
-
+							bitmap = ImageProcessing.rgbToBitmap(img, width,
+									height);
 						}
 
 						Looper.prepare();
-						// new SavePhotoTask().execute(previous,
-						// original,bitmap);
+					
 						new SavePhotoTask().execute(original, bitmap);
 
 					}
@@ -1443,8 +1438,9 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 
 					String name = String.valueOf(System.currentTimeMillis());
 
-					if (bitmap != null)
+					if (bitmap != null) {
 						save(name, bitmap);
+					}
 				}
 
 			} catch (Exception e) {
@@ -1456,7 +1452,7 @@ public class Server extends IOIOActivity implements SurfaceHolder.Callback,
 		private void save(String name, Bitmap bitmap) {
 			try {
 				File myDir = new File(Environment.getExternalStorageDirectory()
-						+ "/AAA", name + ".jpg");
+						+ "/aMotion", name + ".jpg");
 
 				if (myDir.exists())
 					myDir.delete();

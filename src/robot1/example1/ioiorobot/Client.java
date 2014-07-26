@@ -35,7 +35,6 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class Client extends Activity {
-	// int a;
 	// CONNECTION
 	RelativeLayout bg;
 	InetAddress serverAddr;
@@ -92,6 +91,7 @@ public class Client extends Activity {
 		bg.setBackgroundColor(Color.argb(100, 240, 135, 124));
 		_temp.setText("Temperature : No data");
 
+		
 		_connect.setOnClickListener(new OnClickListener() {
 
 			@Override
@@ -590,12 +590,11 @@ public class Client extends Activity {
 
 							break;
 						}
-						/*try {
-							Thread.sleep(100);
-						} catch (InterruptedException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}*/
+						/*
+						 * try { Thread.sleep(100); } catch
+						 * (InterruptedException e1) { // TODO Auto-generated
+						 * catch block e1.printStackTrace(); }
+						 */
 					}
 				}
 
@@ -802,7 +801,7 @@ public class Client extends Activity {
 		_targetIP.setText(ip);
 		_GPS = (TextView) findViewById(R.id.showgps);
 		bg = (RelativeLayout) findViewById(R.id.RA1);
-		//autoCon=(ToggleButton) findViewById(R.id.AutoControl);
+				//autoCon=(ToggleButton) findViewById(R.id.AutoControl);
 	}
 
 }
